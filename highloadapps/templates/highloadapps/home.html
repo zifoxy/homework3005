@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlashSale · Async High-Load</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg0: #0b1220;
+      --bg1: #121c2f;
+      --ink: #e8eef8;
+      --muted: #93a4bd;
+      --accent: #3dd6c6;
+      --accent2: #f0b429;
+      --danger: #ff6b7a;
+      --line: rgba(232, 238, 248, 0.12);
+      --glow: rgba(61, 214, 198, 0.25);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Outfit, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(61, 214, 198, 0.18), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(240, 180, 41, 0.12), transparent 50%),
+        linear-gradient(160deg, var(--bg0), var(--bg1) 55%, #0a101c);
+    }
+
+    .wrap { width: min(1100px, calc(100% - 2rem)); margin: 0 auto; padding: 2.5rem 0 4rem; }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+    header h1 span { color: var(--accent); }
+    header p {
+      margin: 0.85rem 0 0;
+      max-width: 40rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1.25rem;
+      margin-top: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: rgba(18, 28, 47, 0.72);
+      backdrop-filter: blur(8px);
+      border-radius: 18px;
+      padding: 1.25rem 1.35rem;
+      box-shadow: 0 0 0 1px rgba(61, 214, 198, 0.04), 0 20px 50px rgba(0, 0, 0, 0.25);
+    }
+    .panel h2 {
+      margin: 0 0 0.85rem;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+
+    .stat {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 2rem;
+      font-weight: 500;
+    }
+    .stat small { display: block; margin-top: 0.2rem; font-size: 0.8rem; color: var(--muted); font-family: Outfit, sans-serif; }
+
+    .concert {
+      display: grid;
+      gap: 0.35rem;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .concert:last-child { border-bottom: 0; padding-bottom: 0; }
+    .concert strong { font-size: 1.05rem; }
+    .meta { color: var(--muted); font-size: 0.9rem; }
+    .tickets {
+      font-family: "IBM Plex Mono", monospace;
+      color: var(--accent2);
+      font-size: 0.9rem;
+    }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
+    button, .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 0.7rem 1.15rem;
+      font: 600 0.95rem Outfit, sans-serif;
+      cursor: pointer;
+      color: #041015;
+      background: var(--accent);
+      box-shadow: 0 0 24px var(--glow);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    button.secondary, .btn.secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+    button:disabled { opacity: 0.55; cursor: wait; }
+
+    #out {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--line);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.82rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 4rem;
+      color: #c6d4e8;
+    }
+
+    .hint { margin-top: 1.5rem; color: var(--muted); font-size: 0.92rem; line-height: 1.5; }
+    .hint code {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.85em;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body{% if snapshot.concerts %} data-first-concert-id="{{ snapshot.concerts.0.id }}"{% endif %}>
+  <div class="wrap">
+    <header>
+      <h1>Flash<span>Sale</span></h1>
+      <p>
+        Учебный сервис продажи билетов на концерты: асинхронные взаимодействия
+        с БД под высокой нагрузкой (Django Async ORM + ASGI).
+      </p>
+    </header>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Сводка</h2>
+        <div class="stat">{{ snapshot.orders_count }}
+          <small>всего заказов</small>
+        </div>
+        <div class="stat" style="margin-top:1rem; font-size:1.4rem;">{{ snapshot.confirmed_count }}
+          <small>подтверждено</small>
+        </div>
+      </section>
+
+      <section class="panel" style="grid-column: span 2;">
+        <h2>Концерты в продаже</h2>
+        {% for c in snapshot.concerts %}
+          <div class="concert">
+            <strong>{{ c.title }}</strong>
+            <div class="meta">{{ c.venue }} · {{ c.starts_at|date:"d.m.Y H:i" }} · {{ c.ticket_price }} ₽</div>
+            <div class="tickets">id={{ c.id }} · доступно {{ c.available_tickets }} / {{ c.total_tickets }}</div>
+          </div>
+        {% empty %}
+          <p class="meta">Нет данных. Выполните: <code>python manage.py seed_concerts</code></p>
+        {% endfor %}
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top:1.25rem;">
+      <h2>Демо API</h2>
+      <div class="actions">
+        <button type="button" id="btn-compare">Сравнить sync / async</button>
+        <button type="button" class="secondary" id="btn-async-dash">Async dashboard</button>
+        <button type="button" class="secondary" id="btn-sync-dash">Sync dashboard</button>
+        <button type="button" class="secondary" id="btn-buy">Купить 1 билет (async)</button>
+      </div>
+      <pre id="out">Нажмите кнопку — ответ API появится здесь.</pre>
+      <p class="hint">
+        Запускайте сервер через ASGI: <code>uvicorn config.asgi:application --reload</code>.
+        Нагрузка: <code>python load_test.py</code>
+      </p>
+    </section>
+  </div>
+
+  <script>
+    const out = document.getElementById('out');
+    const rawConcertId = document.body.dataset.firstConcertId;
+    const firstConcertId = rawConcertId ? Number(rawConcertId) : null;
+
+    async function call(url, options = {}) {
+      out.textContent = 'Запрос…';
+      const t0 = performance.now();
+      const res = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options,
+      });
+      const data = await res.json();
+      const clientMs = (performance.now() - t0).toFixed(1);
+      out.textContent = `HTTP ${res.status} · client ${clientMs} ms\n\n` + JSON.stringify(data, null, 2);
+    }
+
+    document.getElementById('btn-compare').onclick = () => call('/api/compare/');
+    document.getElementById('btn-async-dash').onclick = () => call('/api/async/dashboard/');
+    document.getElementById('btn-sync-dash').onclick = () => call('/api/sync/dashboard/');
+    document.getElementById('btn-buy').onclick = () => {
+      if (!firstConcertId) {
+        out.textContent = 'Сначала выполните seed_concerts';
+        return;
+      }
+      call(`/api/async/concerts/${firstConcertId}/buy/`, {
+        method: 'POST',
+        body: JSON.stringify({
+          email: `fan${Date.now()}@example.com`,
+          quantity: 1,
+        }),
+      });
+    };
+  </script>
+</body>
+</html>

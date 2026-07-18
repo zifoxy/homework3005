@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-jnjmv113ln^2(8!tmw7kjb$ib!mo=^)uj8%=v#2f(-i(szcg7i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -68,15 +68,27 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+#
+# Для учёбы — SQLite. В real high-load: PostgreSQL + CONN_MAX_AGE / PgBouncer.
+# Пример PostgreSQL:
+#   'ENGINE': 'django.db.backends.postgresql',
+#   'NAME': 'flashsale', 'USER': '...', 'PASSWORD': '...',
+#   'HOST': '127.0.0.1', 'PORT': '5432',
+#   'CONN_MAX_AGE': 60,
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            # Параллельные readers в async-сценариях на SQLite
+            'timeout': 20,
+        },
     }
 }
 
